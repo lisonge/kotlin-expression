@@ -2,7 +2,7 @@
 
 ## 项目结构
 
-项目参考 `kotlin-json5` 的单模块结构：
+库参考 `kotlin-json5` 的单模块结构，性能基准单独位于 `benchmarks` 模块：
 
 ```text
 .
@@ -17,6 +17,9 @@
 │       ├── commonTest/kotlin/li/songe/expression/
 │       └── jvmTest/kotlin/li/songe/expression/
 ├── docs/
+├── benchmarks/
+│   ├── build.gradle.kts
+│   └── src/jmh/kotlin/li/songe/expression/benchmark/
 └── .github/workflows/release.yml
 ```
 
@@ -49,6 +52,8 @@
 ```
 
 ABI 检查不能替代行为测试：运算优先级、结果和错误行为变化不一定改变 ABI。
+
+性能基准通过 `:benchmarks:jmh` 独立运行，不加入上述测试任务。场景、配置与结果说明见 [JVM 性能基准](benchmarks.md)。
 
 ## 本地快照
 
@@ -94,4 +99,4 @@ version = "0.1.0" + if (!providers.environmentVariable("CI").isPresent) "-SNAPSH
 
 初始实现完成了 JVM 测试、JVM ABI 检查、本地 Maven 快照发布及独立 JVM 消费项目验证。其他目标的配置不代表已完成运行验证。
 
-GKD 集成替换、真实订阅表达式与 Keval 的差分测试、性能基准以及 Android 设备验证不属于已完成的验证范围。
+JVM 合成场景的性能测量由独立基准模块提供。GKD 集成替换、真实订阅表达式与 Keval 的差分测试、真实语料性能以及 Android 设备验证不属于本文记录的验证范围。

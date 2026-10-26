@@ -67,6 +67,10 @@ AST 不保存函数实现。同一编译结果可以重复或并发使用不同�
 
 ## 错误定位与复杂度
 
+`CompiledExpression.validateBindings(variables: Set<String>, functions: Map<String, ExpressionFunction>)` 提供可选的静态绑定校验，两个参数默认为空集合。遍历 AST 检查每个变量引用及每次函数调用，包括同名函数的不同参数数量；按操作数从左到右、函数自身先于参数的顺序收集所有绑定错误，返回 `List<ExpressionEvaluationException>`，空列表表示通过。同名引用在不同位置分别报告；未知函数跳过参数数量检查，未知函数和参数数量错误均不阻止参数内部校验。列表中的错误使用 `ExpressionEvaluationException` 的 `MISSING_VARIABLE`、`UNKNOWN_FUNCTION`、`INVALID_ARGUMENT_COUNT`，区间覆盖完整名称。校验不读取变量值、不执行函数或算术，不检查除零或 clamp 上下界，因此其首个错误可能不同于实际求值。集合访问异常原样传播并中断校验，不返回已收集的部分列表。每次校验使用独立的结果列表，实际求值仍在首个错误处停止。校验不存储绑定，后续求值仍使用当次传入的 Map。
+
+`CompiledExpression.validateArithmetic()` 提供独立的静态除零校验，返回按运算符源码位置排列的 `List<ExpressionEvaluationException>`。遍历所有操作数和函数参数，包括绑定无效的调用；仅检查 `/`、`%` 的右操作数是否为编译时常量折叠得到的正零或负零，报告 `DIVISION_BY_ZERO`，区间覆盖运算符。例如 `1/(2-2)`、`x/0` 可以报告，`1/x`、`1/(x-x)` 和 `1/min(0,0)` 不会被推断。不读取变量值、不执行函数、不检查 clamp 上下界或非有限值。返回空列表仅表示未发现静态确定的除零；编译和求值行为不变，实际求值仍可能先遇到其他错误。每次校验使用独立结果列表，不保存状态。
+
 `Expression.compileResult(source)` 返回 `ExpressionResult<CompiledExpression, ExpressionParseException>`，`evaluateResult(variables, functions)` 返回 `ExpressionResult<Double, ExpressionEvaluationException>`。sealed 接口包含 `Success<T>(value)` 与 `Failure<E>(error)` 两个分支，成功值和错误类型均为协变参数，调用方可通过 `when` 穷尽处理并直接访问具体类型的错误。
 
 编译结果接口复用 `compile()`，两个求值接口共享 AST 求值实现。结果接口将引擎及标准函数产生的对应阶段表达式异常转换为 `Failure`，保留错误码、源码区间和消息。自定义函数及变量/函数 Map 查找抛出的异常原样传播，包括其中的表达式异常。缺失的变量绑定在求值时报告 `MISSING_VARIABLE`，保留原始变量引用区间。

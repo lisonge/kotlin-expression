@@ -24,6 +24,42 @@ public class CompiledExpression internal constructor(
     public val functions: Set<String> = functions
 
     /**
+     * Checks allowed variable names, function bindings and every call's argument count.
+     * Returns all binding errors in source order, or an empty list on success.
+     * Checks each function before its arguments, continuing into invalid calls.
+     * Each erroneous occurrence retains its full name's source range.
+     * Does not read variable values, execute functions or check arithmetic errors.
+     * Bindings are not retained; evaluation continues to use its supplied maps.
+     * Exceptions from supplied collections propagate unchanged.
+     * Errors describe missing variables, unknown functions or incorrect argument counts.
+     */
+    public fun validateBindings(
+        variables: Set<String> = emptySet(),
+        functions: Map<String, ExpressionFunction> = emptyMap(),
+    ): List<ExpressionEvaluationException> {
+        val errors = mutableListOf<ExpressionEvaluationException>()
+        root.validateBindings(variables, functions, errors)
+        return errors
+    }
+
+    /**
+     * Reports division or remainder operators whose divisor is a constant zero,
+     * including negative zero and folded numeric expressions such as `(2 - 2)`.
+     * Returns all such errors in source order, with each range covering its operator.
+     * Visits every operand and function argument, regardless of binding errors.
+     * Does not read variable values, execute functions or infer algebraic identities.
+     * An empty list does not rule out errors depending on runtime values or bindings.
+     * Compilation and evaluation are unchanged; earlier evaluation errors can prevent
+     * a reported operator from being reached. Only [ExpressionEvaluationErrorCode.DIVISION_BY_ZERO]
+     * is reported; clamp bounds, NaN and infinities are not checked.
+     */
+    public fun validateArithmetic(): List<ExpressionEvaluationException> {
+        val errors = mutableListOf<ExpressionEvaluationException>()
+        root.validateArithmetic(errors)
+        return errors
+    }
+
+    /**
      * Evaluates using [variables]. Only referenced variables need bindings; extra keys
      * are ignored. Independent calls can run concurrently. The caller must not mutate
      * its maps during an evaluation. NaN and infinities are preserved.

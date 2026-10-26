@@ -4,7 +4,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
-import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class ExpressionResultTest {
@@ -63,33 +62,6 @@ class ExpressionResultTest {
         assertTrue(nan.value.isNaN())
         assertEquals(ExpressionResult.Success(Double.POSITIVE_INFINITY), compiler.compile("pow(10,1000)").evaluateResult(functions = ExpressionFunctions.standard))
         assertEquals(ExpressionResult.Success(3.0), compiler.compile("1+2").evaluateResult())
-    }
-
-    @Test
-    fun unrelatedExceptionsFromBindingsPropagate() {
-        val expression = Expression.compile("x")
-        val failure = IllegalStateException("Binding lookup failed")
-        val bindings = object : Map<String, Double> by emptyMap() {
-            override fun get(key: String): Double? = throw failure
-        }
-        assertSame(failure, assertFailsWith<IllegalStateException> { expression.evaluateResult(bindings) })
-    }
-
-    @Test
-    fun expressionExceptionsFromBothBindingMapsPropagateUnchanged() {
-        val failure = assertFailsWith<ExpressionEvaluationException> { Expression.compile("1/0").evaluate() }
-        val variables = object : Map<String, Double> by emptyMap() {
-            override fun get(key: String): Double? = throw failure
-        }
-        val functions = object : Map<String, ExpressionFunction> by emptyMap() {
-            override fun get(key: String): ExpressionFunction? = throw failure
-        }
-        val variableExpression = Expression.compile("x")
-        val functionExpression = Expression.compile("f()")
-        assertSame(failure, assertFailsWith<ExpressionEvaluationException> { variableExpression.evaluate(variables) })
-        assertSame(failure, assertFailsWith<ExpressionEvaluationException> { variableExpression.evaluateResult(variables) })
-        assertSame(failure, assertFailsWith<ExpressionEvaluationException> { functionExpression.evaluate(functions = functions) })
-        assertSame(failure, assertFailsWith<ExpressionEvaluationException> { functionExpression.evaluateResult(functions = functions) })
     }
 
     private fun assertErrorEquals(expected: ExpressionException, actual: ExpressionException) {

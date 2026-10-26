@@ -46,7 +46,7 @@ public class ExpressionParseException internal constructor(
     message: String,
 ) : ExpressionException(startIndex, endIndex, message)
 
-/** Missing bindings, incorrect argument counts or invalid arithmetic during evaluation. */
+/** Static validation failures, or missing bindings, incorrect arguments or invalid arithmetic during evaluation. */
 public class ExpressionEvaluationException internal constructor(
     public val code: ExpressionEvaluationErrorCode,
     startIndex: Int,

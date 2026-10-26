@@ -8,6 +8,82 @@ import kotlin.test.assertSame
 
 class InternalCleanupTest {
     @Test
+    fun numericConversionHandlesLiteralsAtTheSourceLengthLimit() {
+        val cases = listOf(
+            Triple("leading integer zeros", "0".repeat(16_383) + "1", 1.0),
+            Triple("long fractional part", "1." + "0".repeat(16_382), 1.0),
+            Triple("integer overflow", "1" + "0".repeat(16_383), Double.POSITIVE_INFINITY),
+            Triple("fractional underflow", "0." + "0".repeat(16_381) + "1", 0.0),
+            Triple("negative zero", "-0." + "0".repeat(16_381), -0.0),
+            Triple("exponent overflow", "1e" + "9".repeat(16_382), Double.POSITIVE_INFINITY),
+            Triple("exponent underflow", "1e-" + "9".repeat(16_381), 0.0),
+            Triple("leading exponent zeros", "1e" + "0".repeat(16_381) + "1", 10.0),
+        )
+        for ((name, source, expected) in cases) {
+            assertEquals(16_384, source.length, name)
+            val compiled = Expression.compile(source)
+            val returned = assertIs<ExpressionResult.Success<CompiledExpression>>(Expression.compileResult(source)).value
+            assertEquals(expected.toBits(), compiled.evaluate().toBits(), name)
+            assertEquals(expected.toBits(), returned.evaluate().toBits(), name)
+        }
+    }
+
+    @Test
+    fun numericConversionPreservesLexicalErrorPriorityAndRanges() {
+        data class Case(
+            val source: String,
+            val code: ExpressionParseErrorCode,
+            val start: Int,
+            val end: Int,
+        )
+        val cases = listOf(
+            Case("0".repeat(16_382) + "1@", ExpressionParseErrorCode.INVALID_CHARACTER, 16_383, 16_384),
+            Case("2 + 123.@", ExpressionParseErrorCode.INVALID_NUMBER, 4, 8),
+            Case("2 + 1.25e+@", ExpressionParseErrorCode.INVALID_NUMBER, 4, 10),
+            Case("1 + 2.0.5", ExpressionParseErrorCode.INVALID_NUMBER, 7, 8),
+            Case("0 + 0x1", ExpressionParseErrorCode.UNEXPECTED_TOKEN, 5, 7),
+        )
+        for ((source, code, start, end) in cases) {
+            val thrown = assertFailsWith<ExpressionParseException> { Expression.compile(source) }
+            val returned = assertIs<ExpressionResult.Failure<ExpressionParseException>>(Expression.compileResult(source)).error
+            assertEquals(code, thrown.code)
+            assertEquals(start, thrown.startIndex)
+            assertEquals(end, thrown.endIndex)
+            assertEquals(thrown.code, returned.code)
+            assertEquals(thrown.startIndex, returned.startIndex)
+            assertEquals(thrown.endIndex, returned.endIndex)
+            assertEquals(thrown.message, returned.message)
+        }
+    }
+
+    @Test
+    fun parserNestingIsIndependentAcrossSiblingsAndCompilations() {
+        val group = "(".repeat(127) + "1" + ")".repeat(127)
+        val argument = "(".repeat(126) + "1" + ")".repeat(126)
+        val validSources = listOf(
+            "$group + -$group + $group" to 1.0,
+            "min($argument,-$argument,$argument)" to -1.0,
+        )
+        val invalidSources = listOf(
+            ("(".repeat(64) + "1+" + ")".repeat(64)) to ExpressionParseErrorCode.UNEXPECTED_TOKEN,
+            ("(".repeat(128) + "1" + ")".repeat(128)) to ExpressionParseErrorCode.LIMIT_EXCEEDED,
+            List(129) { "1" }.joinToString("+") to ExpressionParseErrorCode.LIMIT_EXCEEDED,
+        )
+        for ((invalid, code) in invalidSources) {
+            assertEquals(code, assertFailsWith<ExpressionParseException> { Expression.compile(invalid) }.code)
+            assertEquals(code, assertIs<ExpressionResult.Failure<ExpressionParseException>>(
+                Expression.compileResult(invalid),
+            ).error.code)
+            for ((source, expected) in validSources) {
+                val compiled = Expression.compile(source)
+                val returned = assertIs<ExpressionResult.Success<CompiledExpression>>(Expression.compileResult(source)).value
+                assertEquals(expected, compiled.evaluate(functions = ExpressionFunctions.standard))
+                assertEquals(expected, returned.evaluate(functions = ExpressionFunctions.standard))
+            }
+        }
+    }
+
+    @Test
     fun reentrantCallbacksKeepEvaluationErrorsOutsideResultFailures() {
         val inner = Expression.compile("1/0")
         val failure = assertFailsWith<ExpressionEvaluationException> { inner.evaluate() }

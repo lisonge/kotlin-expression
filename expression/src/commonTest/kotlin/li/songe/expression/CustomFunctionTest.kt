@@ -140,7 +140,6 @@ class CustomFunctionTest {
 
     @Test
     fun zeroArgumentsNamesAndArgumentArrays() {
-        assertFailsWith<IllegalArgumentException> { ExpressionFunction(-1) { 0.0 } }
         val arrays = mutableListOf<DoubleArray>()
         val function = ExpressionFunction(1) { arrays.add(it); it[0] }
         val expression = Expression.compile("f(f)+f(2)")

@@ -45,22 +45,20 @@ internal class Parser(source: String) {
 
     private fun unary(): ExpressionNode {
         if (++nesting > 128) token.fail(ExpressionParseErrorCode.LIMIT_EXCEEDED, "Parser nesting exceeds 128")
-        try {
-            if (token.kind == TokenKind.PLUS || token.kind == TokenKind.MINUS) {
-                val operator = advance()
-                return checked(ExpressionNode.Unary.create(operator, primary()), operator)
-            }
-            return primary()
-        } finally {
-            nesting--
+        val result = if (token.kind == TokenKind.PLUS || token.kind == TokenKind.MINUS) {
+            val operator = advance()
+            checked(ExpressionNode.Unary.create(operator, primary()), operator)
+        } else {
+            primary()
         }
+        nesting--
+        return result
     }
 
     private fun primary(): ExpressionNode = when (token.kind) {
         TokenKind.NUMBER -> {
             val number = advance()
-            ExpressionNode.Number(number.text.toDoubleOrNull()
-                ?: number.fail(ExpressionParseErrorCode.INVALID_NUMBER, "Invalid numeric literal"))
+            ExpressionNode.Number(number.text.toDouble())
         }
         TokenKind.IDENTIFIER -> {
             val name = advance()

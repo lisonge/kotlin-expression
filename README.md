@@ -195,6 +195,49 @@ val result = expression.evaluate(
 
 Function names are case-sensitive. Missing functions and incorrect argument counts produce evaluation errors at the function name. Exceptions thrown by custom implementations or binding map lookups propagate unchanged through both evaluation APIs. For concurrent use, supply thread-safe implementations or separate bindings per call.
 
+## Static binding validation
+
+Use `validateBindings` when loading an expression to check allowed variable names, supplied functions, and the argument count of every call. It returns a `List<ExpressionEvaluationException>` in source order; an empty list means success. Each erroneous occurrence retains its original name's source range; repeated names at different positions produce separate errors. Unknown functions skip argument-count checking, but validation continues into their arguments. Incorrect argument counts also allow argument validation to continue. The error codes are `MISSING_VARIABLE`, `UNKNOWN_FUNCTION`, and `INVALID_ARGUMENT_COUNT`.
+
+Report each binding error, then evaluate only when the list is empty:
+
+```kotlin
+val expression = Expression.compile("clamp(screen.width * 0.5, 0, 100)")
+val errors = expression.validateBindings(
+    variables = setOf("screen.width"),
+    functions = ExpressionFunctions.standard,
+)
+if (errors.isNotEmpty()) {
+    for (error in errors) {
+        println("${error.code}: [${error.startIndex}, ${error.endIndex})")
+    }
+} else {
+    val result = expression.evaluate(
+        variables = mapOf("screen.width" to 120.0),
+        functions = ExpressionFunctions.standard,
+    )
+    println(result) // 60.0
+}
+```
+
+`variables` is a set of complete names, so no variable values are read. Validation never executes functions or evaluates arithmetic: `1 / 0` and `clamp(1, 3, 2)` pass binding validation but fail during evaluation. Operands are visited left to right; a function binding and its argument count are checked before its arguments. Both binding parameters default to empty collections. Validation stores no bindings and leaves subsequent evaluation unchanged; pass the desired maps when evaluating. Exceptions from supplied collections propagate unchanged, even if some binding errors have already been collected.
+
+## Static arithmetic validation
+
+Use `validateArithmetic()` to find division and remainder operators whose divisor is a constant zero, including negative zero and folded numeric expressions. It returns all detected `DIVISION_BY_ZERO` errors in source order as a `List<ExpressionEvaluationException>`; each source range covers the `/` or `%` operator.
+
+```kotlin
+val expression = Expression.compile("x / (2 - 2) + 1 % -0")
+val errors = expression.validateArithmetic()
+for (error in errors) {
+    println("${error.code}: [${error.startIndex}, ${error.endIndex})")
+}
+// DIVISION_BY_ZERO: [2, 3)
+// DIVISION_BY_ZERO: [16, 17)
+```
+
+Validation visits all operands and function arguments, including calls with missing bindings or incorrect argument counts. It reads no variable values and executes no functions. For example, `x / 0` is reported regardless of the value of `x`, while `1 / x`, `1 / (x - x)` and `1 / min(0, 0)` require runtime evaluation. An empty list does not guarantee successful evaluation. Clamp bounds, NaN and infinities are not checked. Compilation, binding validation and evaluation retain their existing behavior; evaluation can fail before reaching a reported operator.
+
 ## Errors and reuse
 
 `compileResult()` and `evaluateResult()` return `ExpressionResult<T, E>`. Use an exhaustive `when` to handle `Success.value` and `Failure.error`. The error type is `ExpressionParseException` for compilation and `ExpressionEvaluationException` for evaluation.

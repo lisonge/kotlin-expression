@@ -195,6 +195,49 @@ val result = expression.evaluate(
 
 函数名区分大小写。缺失函数和参数个数错误在求值时报告，源码位置指向函数名。自定义实现或绑定 Map 查找抛出的异常在两个求值接口中均原样传播。并发调用时，可使用线程安全的函数实现，或为每次调用分别提供绑定。
 
+## 静态绑定校验
+
+加载表达式时可用 `validateBindings` 检查允许的变量名、提供的函数以及每次调用的参数数量。返回按源码顺序排列的 `List<ExpressionEvaluationException>`，空列表表示通过。每个错误引用分别保留原始名称的源码区间，同名引用在不同位置分别报告。未知函数跳过参数数量检查，但继续校验参数内部；参数数量错误也不阻止参数内部校验。错误码为 `MISSING_VARIABLE`、`UNKNOWN_FUNCTION`、`INVALID_ARGUMENT_COUNT`。
+
+有绑定错误时逐项报告，列表为空时再求值：
+
+```kotlin
+val expression = Expression.compile("clamp(screen.width * 0.5, 0, 100)")
+val errors = expression.validateBindings(
+    variables = setOf("screen.width"),
+    functions = ExpressionFunctions.standard,
+)
+if (errors.isNotEmpty()) {
+    for (error in errors) {
+        println("${error.code}: [${error.startIndex}, ${error.endIndex})")
+    }
+} else {
+    val result = expression.evaluate(
+        variables = mapOf("screen.width" to 120.0),
+        functions = ExpressionFunctions.standard,
+    )
+    println(result) // 60.0
+}
+```
+
+`variables` 是完整名称的 Set，因此不读取变量值。校验不执行函数或算术计算：`1 / 0` 和 `clamp(1, 3, 2)` 会通过绑定校验，但在求值时失败。操作数从左到右遍历，函数绑定及参数数量先于其参数检查。两个绑定参数默认为空集合。校验不保存绑定，也不改变后续求值；求值时仍传入所需 Map。调用方集合抛出的异常原样传播，即使此前已收集到部分绑定错误。
+
+## 静态算术校验
+
+使用 `validateArithmetic()` 检查除数为常量零的除法和取余运算，包括负零及数字表达式折叠产生的零。返回按源码顺序排列的 `List<ExpressionEvaluationException>`，收集所有确定的 `DIVISION_BY_ZERO` 错误，源码区间覆盖对应的 `/` 或 `%` 运算符。
+
+```kotlin
+val expression = Expression.compile("x / (2 - 2) + 1 % -0")
+val errors = expression.validateArithmetic()
+for (error in errors) {
+    println("${error.code}: [${error.startIndex}, ${error.endIndex})")
+}
+// DIVISION_BY_ZERO: [2, 3)
+// DIVISION_BY_ZERO: [16, 17)
+```
+
+校验遍历所有操作数和函数参数，包括缺少绑定或参数数量错误的调用。不读取变量值、不执行函数。例如，`x / 0` 无需知道 `x` 的值即可报告，而 `1 / x`、`1 / (x - x)`、`1 / min(0, 0)` 仍需运行时求值。空列表不保证求值成功。不检查 clamp 上下界、NaN 或无穷大。编译、绑定校验和求值行为保持不变；实际求值可能在到达所报告的运算符之前就失败。
+
 ## 错误与复用
 
 `compileResult()` 和 `evaluateResult()` 返回 `ExpressionResult<T, E>`。使用穷尽的 `when` 分别处理 `Success.value` 和 `Failure.error`。编译阶段的错误类型为 `ExpressionParseException`，求值阶段为 `ExpressionEvaluationException`。

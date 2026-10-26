@@ -6,6 +6,9 @@ public final class li/songe/expression/CompiledExpression {
 	public final fun getFunctions ()Ljava/util/Set;
 	public final fun getSource ()Ljava/lang/String;
 	public final fun getVariables ()Ljava/util/Set;
+	public final fun validateArithmetic ()Ljava/util/List;
+	public final fun validateBindings (Ljava/util/Set;Ljava/util/Map;)Ljava/util/List;
+	public static synthetic fun validateBindings$default (Lli/songe/expression/CompiledExpression;Ljava/util/Set;Ljava/util/Map;ILjava/lang/Object;)Ljava/util/List;
 }
 
 public final class li/songe/expression/Expression {
