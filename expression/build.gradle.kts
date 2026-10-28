@@ -11,9 +11,6 @@ plugins {
     alias(libs.plugins.maven.publish)
 }
 
-group = "li.songe"
-version = "0.1.0" + if (!providers.environmentVariable("CI").isPresent) "-SNAPSHOT" else ""
-
 kotlin {
     explicitApi()
     compilerOptions {
@@ -43,7 +40,7 @@ kotlin {
 }
 
 mavenPublishing {
-    if (properties.contains("signing.keyId")) {
+    if (project.providers.gradleProperty("signing.keyId").isPresent) {
         publishToMavenCentral()
         signAllPublications()
     }

@@ -20,7 +20,7 @@ JVM 或 Android 项目引入：
 
 ```kotlin
 dependencies {
-    implementation("li.songe:expression:0.1.0")
+    implementation("li.songe:expression:0.1.1")
 }
 ```
 
@@ -30,7 +30,7 @@ Kotlin Multiplatform 项目在 `commonMain` 中引入：
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("li.songe:expression:0.1.0")
+            implementation("li.songe:expression:0.1.1")
         }
     }
 }

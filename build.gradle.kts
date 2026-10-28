@@ -3,3 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.jvm).apply(false)
     alias(libs.plugins.maven.publish).apply(false)
 }
+
+allprojects {
+    group = "li.songe"
+    version = "0.1.1" + if (!providers.environmentVariable("CI").isPresent) "-SNAPSHOT" else ""
+}

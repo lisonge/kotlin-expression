@@ -57,13 +57,13 @@ ABI 检查不能替代行为测试：运算优先级、结果和错误行为变�
 
 ## 本地快照
 
-版本定义位于 `expression/build.gradle.kts`：
+版本定义位于根目录 `build.gradle.kts` 的 `allprojects` 块：
 
 ```kotlin
-version = "0.1.0" + if (!providers.environmentVariable("CI").isPresent) "-SNAPSHOT" else ""
+version = "0.1.1" + if (!providers.environmentVariable("CI").isPresent) "-SNAPSHOT" else ""
 ```
 
-未设置 `CI` 时版本为 `0.1.0-SNAPSHOT`；只要环境变量存在，即使值为 `false`，版本也为 `0.1.0`。
+未设置 `CI` 时版本为 `0.1.1-SNAPSHOT`；只要环境变量存在，即使值为 `false`，版本也为 `0.1.1`。
 
 发布 JVM 产物和多平台入口到本机 Maven 仓库：
 
@@ -71,7 +71,7 @@ version = "0.1.0" + if (!providers.environmentVariable("CI").isPresent) "-SNAPSH
 ./gradlew :expression:publishJvmPublicationToMavenLocal :expression:publishKotlinMultiplatformPublicationToMavenLocal
 ```
 
-其他项目配置 `mavenLocal()` 后，可引用 `li.songe:expression:0.1.0-SNAPSHOT`。上述命令不发布 JS、Wasm 或 Native 平台产物。发布多平台入口时不传 `-PjvmOnly`，以保留完整的目标元数据。
+其他项目配置 `mavenLocal()` 后，可引用 `li.songe:expression:0.1.1-SNAPSHOT`。上述命令不发布 JS、Wasm 或 Native 平台产物。发布多平台入口时不传 `-PjvmOnly`，以保留完整的目标元数据。
 
 ## 发布工作流
 
@@ -89,7 +89,7 @@ version = "0.1.0" + if (!providers.environmentVariable("CI").isPresent) "-SNAPSH
 | `OSSRH_GPG_SECRET_KEY_ID` | 签名密钥 ID |
 | `OSSRH_GPG_SECRET_KEY_PASSWORD` | 签名密钥密码 |
 
-私钥写入工作目录的 `secring.gpg`，签名配置引用该绝对路径；`.gitignore` 已忽略 `*.gpg`。构建脚本检测到 `signing.keyId` 后启用 Maven Central 发布和签名。
+工作流将 Maven Central 凭据和签名属性写入 CI 工作目录的 `gradle.properties`，私钥写入 `secring.gpg`，签名配置引用该绝对路径；`.gitignore` 已忽略 `*.gpg`。构建脚本通过 `providers.gradleProperty("signing.keyId").isPresent` 判断是否启用 Maven Central 发布和签名。
 
 当前库的 Native 发布产物为纯 Kotlin `.klib`，没有 cinterop 或 CocoaPods 依赖，因此发布流程使用 Linux runner；这不代表在 Linux 上执行了 Apple 平台测试。
 

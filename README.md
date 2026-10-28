@@ -20,7 +20,7 @@ For JVM or Android projects:
 
 ```kotlin
 dependencies {
-    implementation("li.songe:expression:0.1.0")
+    implementation("li.songe:expression:0.1.1")
 }
 ```
 
@@ -30,7 +30,7 @@ For Kotlin Multiplatform projects, add the dependency to `commonMain`:
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("li.songe:expression:0.1.0")
+            implementation("li.songe:expression:0.1.1")
         }
     }
 }
