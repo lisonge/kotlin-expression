@@ -1,6 +1,6 @@
 # kotlin-expression
 
-[![Maven Central](https://img.shields.io/maven-central/v/li.songe/expression.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/li.songe/expression)
+[![Maven Central](https://img.shields.io/maven-central/v/li.songe.expression/expression.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/li.songe.expression/expression)
 
 English | [简体中文](README-zh.md)
 
@@ -20,7 +20,7 @@ For JVM or Android projects:
 
 ```kotlin
 dependencies {
-    implementation("li.songe:expression:0.1.1")
+    implementation("li.songe.expression:expression:0.1.2")
 }
 ```
 
@@ -30,7 +30,7 @@ For Kotlin Multiplatform projects, add the dependency to `commonMain`:
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("li.songe:expression:0.1.1")
+            implementation("li.songe.expression:expression:0.1.2")
         }
     }
 }

@@ -60,10 +60,10 @@ ABI 检查不能替代行为测试：运算优先级、结果和错误行为变�
 版本定义位于根目录 `build.gradle.kts` 的 `allprojects` 块：
 
 ```kotlin
-version = "0.1.1" + if (!providers.environmentVariable("CI").isPresent) "-SNAPSHOT" else ""
+version = "0.1.2" + if (!providers.environmentVariable("CI").isPresent) "-SNAPSHOT" else ""
 ```
 
-未设置 `CI` 时版本为 `0.1.1-SNAPSHOT`；只要环境变量存在，即使值为 `false`，版本也为 `0.1.1`。
+未设置 `CI` 时版本为 `0.1.2-SNAPSHOT`；只要环境变量存在，即使值为 `false`，版本也为 `0.1.2`。
 
 发布 JVM 产物和多平台入口到本机 Maven 仓库：
 
@@ -71,7 +71,7 @@ version = "0.1.1" + if (!providers.environmentVariable("CI").isPresent) "-SNAPSH
 ./gradlew :expression:publishJvmPublicationToMavenLocal :expression:publishKotlinMultiplatformPublicationToMavenLocal
 ```
 
-其他项目配置 `mavenLocal()` 后，可引用 `li.songe:expression:0.1.1-SNAPSHOT`。上述命令不发布 JS、Wasm 或 Native 平台产物。发布多平台入口时不传 `-PjvmOnly`，以保留完整的目标元数据。
+其他项目配置 `mavenLocal()` 后，可引用 `li.songe.expression:expression:0.1.2-SNAPSHOT`。上述命令不发布 JS、Wasm 或 Native 平台产物。发布多平台入口时不传 `-PjvmOnly`，以保留完整的目标元数据。
 
 ## 发布工作流
 

@@ -5,6 +5,6 @@ plugins {
 }
 
 allprojects {
-    group = "li.songe"
-    version = "0.1.1" + if (!providers.environmentVariable("CI").isPresent) "-SNAPSHOT" else ""
+    group = "li.songe.expression"
+    version = "0.1.2" + if (!providers.environmentVariable("CI").isPresent) "-SNAPSHOT" else ""
 }
